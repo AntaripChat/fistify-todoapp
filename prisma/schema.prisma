@@ -18,6 +18,7 @@ model User{
   isAdmin Boolean @default(false)
   createAt DateTime @default(now())
   todo Todo[]
+  documentes Documentes[]
 }
 
 
@@ -28,3 +29,22 @@ model Todo{
   userId String
   user User @relation(fields: [userId], references: [id])
 }
+
+model Documentes{
+  id String @id @default(uuid())
+  filename String
+  userId String
+  user User @relation(fields: [userId], references: [id])
+}
+
+
+// model Documentes{
+//   id        String  @id @default(uuid())
+//   filename  String
+//   path      String
+//   mimeType  String
+//   size      BigInt
+//   createdAt DateTime @default(now())
+//   userId String
+//   user User @relation(fields: [userId], references: [id])
+// }

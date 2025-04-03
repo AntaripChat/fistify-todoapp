@@ -1,0 +1,85 @@
+import app from './app.js';
+import serverConfig from './config/server.config.js';
+import authRoutes from './routes/auth.routes.js';
+import todoRoute from './routes/todo.routes.js';
+import userRoute from './routes/user.routes.js';
+import adminRoutes from './routes/admin.routes.js';
+import uploadProfileRoutes from './routes/upload.routes.js';
+import jwt from 'fastify-jwt';
+import { setupSwagger } from './config/swagger.js';
+import fastifyMultipart from '@fastify/multipart';
+import fastifyHelmet from '@fastify/helmet';
+import fastifyCors from '@fastify/cors';
+
+// Validate required environment variables
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
+
+// Register security plugins
+app.register(fastifyHelmet);
+app.register(fastifyCors, {
+  origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
+});
+
+// Register JWT plugin
+app.register(jwt, { 
+  secret: process.env.JWT_SECRET,
+  sign: {
+    expiresIn: '1d' // Example: 1 day expiration
+  }
+});
+
+// Register multipart plugin for file uploads with limits
+app.register(fastifyMultipart, {
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+    files: 1 // Single file upload
+  }
+});
+
+// Setup Swagger documentation
+setupSwagger(app);
+
+// Register routes with proper ordering
+app.register(authRoutes, { prefix: '/api' });
+app.register(userRoute, { prefix: '/api' });
+app.register(todoRoute, { prefix: '/api' });
+app.register(adminRoutes, { prefix: '/api' });
+app.register(uploadProfileRoutes, { prefix: '/api' });
+
+// Custom authentication decorator
+app.decorate('authenticate', async (req, reply) => {
+  try {
+    await req.jwtVerify();
+    app.log.info('Authenticated user: %j', req.user);
+  } catch (err) {
+    app.log.error('Authentication failed: %s', err.message);
+    reply.code(401).send({ error: 'Unauthorized' });
+  }
+});
+
+// Graceful shutdown handlers
+['SIGINT', 'SIGTERM'].forEach(signal => {
+  process.on(signal, async () => {
+    app.log.info(`Received ${signal}, shutting down...`);
+    await app.close();
+    process.exit(0);
+  });
+});
+
+// Start server
+(async function () {
+  try {
+    await app.listen({ 
+      port: serverConfig.PORT,
+      host: serverConfig.HOST || '0.0.0.0'
+    });
+    app.log.info(`Server listening on ${serverConfig.PORT}`);
+    app.log.info(`Documentation available at /documentation`);
+  } catch (err) {
+    app.log.error(err);
+    process.exit(1);
+  }
+})();

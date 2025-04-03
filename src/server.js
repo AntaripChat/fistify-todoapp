@@ -4,10 +4,16 @@ import authRoutes from './routes/auth.routes.js';
 import todoRoute from './routes/todo.routes.js';
 import userRoute from './routes/user.routes.js';
 import adminRoutes from './routes/admin.routes.js';
+import uploadProfileRoutes from './routes/upload.routes.js';
 import jwt from 'fastify-jwt';
 import { setupSwagger } from './config/swagger.js';
 
+import fastifyMultipart from '@fastify/multipart';
+
 app.register(jwt,{secret:process.env.JWT_SECRET});
+
+//---------- Multipart plugin for file upload --------------//
+app.register(fastifyMultipart)
 
 setupSwagger(app);
 
@@ -15,6 +21,7 @@ app.register(authRoutes,{prefix:'/api'});
 app.register(userRoute,{prefix:'/api'});
 app.register(todoRoute,{prefix:'/api'});
 app.register(adminRoutes,{prefix:'/api'});
+app.register(uploadProfileRoutes,{prefix:'/api'});
 
 app.decorate('authenticate', async (req, reply) => {
     try {
@@ -25,6 +32,7 @@ app.decorate('authenticate', async (req, reply) => {
       reply.code(401).send({ error: 'Unauthorized' });
     }
   });
+
   
 (async function (){
     try{

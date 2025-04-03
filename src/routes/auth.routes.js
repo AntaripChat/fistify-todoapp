@@ -1,4 +1,4 @@
-import { register, login } from "../controllers/auth.controller.js";
+import { register, login,refreshToken } from "../controllers/auth.controller.js";
 import { registerValidationMiddleware, loginValidationMiddleware } from "../middleware/auth.middleware.js";
 
 const authRoutes = async (app) => {
@@ -11,9 +11,11 @@ const authRoutes = async (app) => {
               properties: {
                 name: { type: "string" },
                 email: { type: "string" },
+                phone: { type: "string" },
                 password: { type: "string" },
+                "confirmPassword": { type: "string" },
               },
-              required: ["name", "email", "password"],
+              required: ["name", "email","phone", "password", "confirmPassword"],
             },
             response: {
               201: {
@@ -58,6 +60,28 @@ const authRoutes = async (app) => {
         preHandler: loginValidationMiddleware, 
         handler: login, 
     });
+    app.post('/refresh-token', {
+      schema:{
+        description: "Refresh access token",
+        tags: ["Auth"],
+        body: {
+          type: "object",
+          properties: {
+            refreshToken: { type: "string" },
+          },
+          required: ["refreshToken"],
+        },
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              accessToken: { type: "string" },
+            },
+          },
+        },
+      },
+      handler: refreshToken,
+    })
 };
 
 export default authRoutes;
